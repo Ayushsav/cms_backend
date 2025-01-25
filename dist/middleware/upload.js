@@ -8,7 +8,7 @@ const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, path_1.default.join(__dirname, '../../dist/uploads'));
     },
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`);
@@ -21,7 +21,7 @@ const fileFilter = (req, file, cb) => {
         return cb(null, true);
     }
     else {
-        cb(new Error('Only CSV files are allowed'));
+        cb(new Error("Only CSV files are allowed"));
     }
 };
 const upload = (0, multer_1.default)({

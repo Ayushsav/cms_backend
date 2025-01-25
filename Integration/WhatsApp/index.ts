@@ -3,6 +3,8 @@ import Candidate from "../../modals/Candidate/Candidate";
 import {Op, Sequelize} from "sequelize";
 import sendMessage from "../../utils/SendWhatsAppMessage";
 import sequelize from "sequelize";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Modify the function to not rely on `req` and `res`
 const sendExitInterviewMessage = async (): Promise<void> => {
@@ -32,7 +34,7 @@ const sendExitInterviewMessage = async (): Promise<void> => {
       console.log("Sending message to candidate:", candidate.whatsappNumber);
       const user = {
         name: candidate.name,
-        url: `http://localhost:3000/reason-leaving-job/${candidate.id}`,
+        url: `${process.env.FRONTEND_URL}/reason-leaving-job/${candidate.id}`,
         phone: candidate.whatsappNumber,
       };
       await sendMessage(user);

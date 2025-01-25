@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -17,10 +40,13 @@ const User_1 = __importDefault(require("../../modals/User/User"));
 const Token_1 = __importDefault(require("../../modals/Token/Token"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
-const generateToken_1 = __importDefault(require("../../middleware/auth/generateToken"));
+const generateToken_1 = __importStar(require("../../middleware/auth/generateToken"));
 const SendMail_1 = __importDefault(require("../../utils/SendMail"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const sequelize_1 = require("sequelize");
+const http_status_codes_1 = require("http-status-codes");
+const Client_1 = __importDefault(require("../../modals/Client/Client"));
 dotenv_1.default.config();
 const UserCtr = {
     // Register ctr
@@ -60,6 +86,20 @@ const UserCtr = {
                 res.status(400);
                 throw new Error("User Not Found Please Sign in");
             }
+            if (response.Type === "client") {
+                const client = yield Client_1.default.findOne({
+                    where: { userId: response.id },
+                });
+                if (!client) {
+                    res.status(400);
+                    throw new Error("Client Not Found Please Sign in");
+                }
+                //check client status
+                if (client.Status === "InActive") {
+                    res.status(400);
+                    throw new Error("Your Account is InActive Please Contact Admin");
+                }
+            }
             // compare password
             const checkpassword = yield bcryptjs_1.default.compare(req.body.Password, response.Password);
             // check password
@@ -69,9 +109,13 @@ const UserCtr = {
             }
             // generate token
             const token = yield (0, generateToken_1.default)(response.id);
+            // generate refresh token
+            const refreshTokenValue = yield (0, generateToken_1.refreshToken)(response.id);
+            console.log("refreshTokenValue", refreshTokenValue);
             return res.status(200).json({
                 message: "Login Successfully",
                 result: token,
+                refreshToken: refreshTokenValue,
                 success: true,
             });
         }
@@ -79,24 +123,70 @@ const UserCtr = {
             throw new Error(error === null || error === void 0 ? void 0 : error.message);
         }
     })),
+    //refresh token controller
+    refreshTokenCtr: (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const { refreshTokens } = req.body;
+            console.log("refreshToken", generateToken_1.refreshToken);
+            // const token = req.cookies;
+            // console.log("token", token);
+            // if (!token?.jwt) {
+            //   return res.status(400).json({message: "Unauthorized"});
+            // }
+            // const refreshTokenValues = token.jwt;
+            // console.log("refreshTokenValues", refreshTokenValues);
+            // console.log("refreshTokenValues", refreshTokenValues);
+            if (!refreshTokens) {
+                return res.status(400).json({ message: "Unauthorized" });
+            }
+            const decoded = jsonwebtoken_1.default.verify(refreshTokens, process.env.JWT_SECRET);
+            console.log("decoded", decoded);
+            const user = yield User_1.default.findByPk(decoded.id);
+            console.log("user", user);
+            if (!user) {
+                res.status(404).json({ message: "User not found, Please login" });
+                return;
+            }
+            const newToken = yield (0, generateToken_1.default)(user.id);
+            const refreshTokenValue = yield (0, generateToken_1.refreshToken)(user.id);
+            res.status(200).json({
+                success: true,
+                message: "Token Refreshed",
+                result: newToken,
+                refreshToken: refreshTokenValue,
+            });
+        }
+        catch (error) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    })),
     // logout Ctr
     logoutCtr: (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            return res
-                .status(200)
-                .json({ message: "Successfully logged out", status: "success" });
+            res.cookie("jwt", "", {
+                httpOnly: true,
+                secure: true,
+                sameSite: "none",
+                expires: new Date(0),
+            });
+            res.status(200).json({
+                success: true,
+                message: "Logged Out",
+            });
         }
         catch (error) {
-            res.status(500).json({
-                message: error.message || "An error occurred during logout",
-                status: "error",
-            });
+            throw new Error(error === null || error === void 0 ? void 0 : error.message);
         }
     })),
     // Profile Ctr
     profileCtr: (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const response = yield User_1.default.findAndCountAll();
+            // const response = await User.findByPk(req.user.id);
+            //exclude password
+            const response = yield User_1.default.findOne({
+                where: { id: req.user.id },
+                attributes: { exclude: ["Password"] },
+            });
             if (!response) {
                 res.status(400);
                 throw new Error("User Not Found Please Sign in");
@@ -111,9 +201,28 @@ const UserCtr = {
             throw new Error(error === null || error === void 0 ? void 0 : error.message);
         }
     })),
+    getUserCtr: (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const response = yield User_1.default.findOne({
+                where: { id: req.user.id },
+                attributes: { exclude: ["Password"] },
+            });
+            if (!response) {
+                res.status(http_status_codes_1.StatusCodes.BAD_REQUEST);
+                throw new Error("Bad request");
+            }
+            return res.status(http_status_codes_1.StatusCodes.OK).json({
+                message: "User fetched", result: response, success: true,
+            });
+        }
+        catch (error) {
+            throw new Error(error === null || error === void 0 ? void 0 : error.message);
+        }
+    })),
     // forget Ctr
     forgetpasswordCtr: (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
+            console.log(req.body);
             const response = yield User_1.default.findOne({
                 where: { Email: req.body.Email },
             });
@@ -222,17 +331,79 @@ const UserCtr = {
             }
             // check if old password matches password in DB
             const passwordIsCorrect = yield bcryptjs_1.default.compare(oldPassword, user.Password);
+            if (!passwordIsCorrect) {
+                res.status(400);
+                throw new Error("Old password is incorrect");
+            }
             // Save new password
             if (user && passwordIsCorrect) {
                 const hashpassword = yield bcryptjs_1.default.hash(Password, 10);
                 user.Password = hashpassword;
                 yield user.save();
-                res.status(200).send("Password change successful ");
+                res.status(200).json({
+                    success: true,
+                    message: "Password changed successfully",
+                });
             }
         }
         catch (error) {
             throw new Error(error === null || error === void 0 ? void 0 : error.message);
         }
+    })),
+    editprofileCtr: (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const { FirstName, LastName, Email, Phone } = req.body;
+            const user = yield User_1.default.findOne({ where: { id: req.user.id } });
+            if (!user) {
+                res.status(401);
+                throw new Error("User not found");
+            }
+            if (!FirstName || !LastName || !Email || !Phone) {
+                res.status(400);
+                throw new Error("Please provide all required fields");
+            }
+            user.FirstName = FirstName;
+            user.LastName = LastName;
+            user.Email = Email;
+            user.Phone = Phone;
+            // Handle uploaded image
+            if (req.file) {
+                console.log("images", req.file);
+                user.ProfileImage = `/uploads/profileImages/${req.file.filename}`;
+            }
+            yield user.save();
+            //exclude password
+            res.status(200).json({
+                message: "Profile updated successfully",
+                success: true,
+                result: user,
+            });
+        }
+        catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    })),
+    gettoken: (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const accessToken = yield jsonwebtoken_1.default.sign({
+                UserInfo: {
+                    username: "1",
+                },
+            }, "secrete", { expiresIn: "15m" });
+            console.log(accessToken);
+            const refreshToken = yield jsonwebtoken_1.default.sign({ username: "1" }, "secrete", { expiresIn: "7d" });
+            console.log(refreshToken);
+            // Create secure cookie with refresh token
+            res.cookie("jwt", refreshToken, {
+                path: "/",
+                httpOnly: true,
+                expires: new Date(Date.now() + 1000 * 86400), // 1 day
+                sameSite: "none",
+                secure: true,
+            });
+            res.json({ accessToken });
+        }
+        catch (error) { }
     })),
 };
 exports.default = UserCtr;

@@ -19,6 +19,7 @@ Designation.init({
     },
 }, {
     tableName: "designations",
+    timestamps: false,
     sequelize: dbconfig_1.default,
 });
 exports.default = Designation;

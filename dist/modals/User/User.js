@@ -18,6 +18,7 @@ class User extends sequelize_1.Model {
                 .min(10)
                 .max(15)
                 .optional(),
+            ProfileImage: joi_1.default.string().optional(),
         });
         return schema.validate(user);
     }
@@ -39,7 +40,7 @@ User.init({
     Email: {
         type: sequelize_1.DataTypes.STRING,
         allowNull: false,
-        unique: true,
+        unique: 'EmailUnique',
     },
     Password: {
         type: sequelize_1.DataTypes.STRING,
@@ -49,8 +50,18 @@ User.init({
         type: sequelize_1.DataTypes.STRING,
         allowNull: true,
     },
+    ProfileImage: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: true,
+        defaultValue: "https://i.ibb.co/4pDNDk1/avatar.png",
+    },
+    Type: {
+        type: sequelize_1.DataTypes.ENUM("superadmin", "client"),
+        allowNull: false,
+        defaultValue: "client",
+    },
 }, {
     sequelize: dbconfig_1.default,
-    modelName: "User",
+    modelName: "User"
 });
 exports.default = User;

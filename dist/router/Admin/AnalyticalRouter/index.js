@@ -1,0 +1,25 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const AnalyticalController_1 = __importDefault(require("../../../controller/AnalyticalController"));
+const Verifytoken_1 = __importDefault(require("../../../middleware/auth/Verifytoken"));
+const reason_1 = __importDefault(require("../../../controller/AnalyticalController/reason"));
+const analyticalRouter = express_1.default.Router();
+analyticalRouter.get("/candidate-distribution", Verifytoken_1.default, AnalyticalController_1.default.candidateDistribution);
+analyticalRouter.get("/work-experience-analysis", Verifytoken_1.default, AnalyticalController_1.default.workExperienceAnalysis);
+analyticalRouter.get("/current-ctc-analysis", Verifytoken_1.default, AnalyticalController_1.default.currentCTCAnalysis);
+analyticalRouter.get("/geographical-distribution", Verifytoken_1.default, AnalyticalController_1.default.geographicalDistribution);
+analyticalRouter.get("/education-level-analysis", Verifytoken_1.default, AnalyticalController_1.default.educationLevelAnalysis);
+analyticalRouter.get("/client-analysis", Verifytoken_1.default, AnalyticalController_1.default.clientStatusAnalysis);
+analyticalRouter.get("/tag-analysis", Verifytoken_1.default, AnalyticalController_1.default.tagAnalysis);
+analyticalRouter.get("/candidate-age-distribution", Verifytoken_1.default, AnalyticalController_1.default.candidateAgeDistribution);
+analyticalRouter.get('/answers/distribution', Verifytoken_1.default, reason_1.default.getAnswerDistribution);
+// analyticalRouter.get('/answers/combinations',verifyToken, answerCandidateController.getCommonAnswerCombinations);
+analyticalRouter.get('/answers/demographics', Verifytoken_1.default, reason_1.default.getAnswersByDemographics);
+// analyticalRouter.get('/answers/trends',verifyToken, answerCandidateController.getAnswerTrends);
+analyticalRouter.get('/answers/candidate-stats', Verifytoken_1.default, reason_1.default.getCandidateStatsPerAnswer);
+analyticalRouter.get('/answers/by-experience', Verifytoken_1.default, reason_1.default.getAnswersByExperience);
+exports.default = analyticalRouter;

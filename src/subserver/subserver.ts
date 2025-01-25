@@ -16,11 +16,11 @@ const createApp = (): Express => {
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads/profileImages')));
 app.use(cookieParser());
-  app.use(cors(
-    {origin:"*",
-      credentials: true,
-    }
-  ));
+app.use(cors({
+  origin: 'http://my-candidate-management-system-bucket.s3-website.eu-north-1.amazonaws.com', // Replace with your actual frontend URL
+  credentials: true,
+}));
+
   app.use(morgan("dev"));
   app.use(bodyParser.json({ limit: "50mb" }));
   app.use(bodyParser.urlencoded({ extended: true }));

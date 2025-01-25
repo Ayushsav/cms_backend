@@ -15,14 +15,6 @@ Education.init({
         autoIncrement: true,
         primaryKey: true,
     },
-    candidateId: {
-        type: sequelize_1.DataTypes.INTEGER,
-        references: {
-            model: Candidate_1.default,
-            key: 'id',
-        },
-        allowNull: false,
-    },
     ugCourse: {
         type: sequelize_1.DataTypes.STRING,
         allowNull: true,
@@ -31,8 +23,33 @@ Education.init({
         type: sequelize_1.DataTypes.STRING,
         allowNull: true,
     },
+    postPgCourse: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: true,
+    },
+    candidateId: {
+        type: sequelize_1.DataTypes.INTEGER, // Make sure this matches `candidates.id`
+        references: {
+            model: Candidate_1.default, // Reference the Candidate model
+            key: "id",
+        },
+        // onDelete: "SET NULL",
+        // onUpdate: "CASCADE",
+        // allowNull: true,
+    },
 }, {
-    tableName: 'educations',
+    tableName: "educations",
     sequelize: dbconfig_1.default,
+});
+// Candidate - Education (One-to-One)
+Candidate_1.default.hasOne(Education, {
+    foreignKey: "candidateId",
+    as: "education",
+    onDelete: "CASCADE",
+});
+Education.belongsTo(Candidate_1.default, {
+    foreignKey: "candidateId",
+    as: "candidate",
+    onDelete: "CASCADE",
 });
 exports.default = Education;

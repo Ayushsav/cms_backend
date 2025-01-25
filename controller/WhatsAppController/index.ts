@@ -30,7 +30,7 @@ const WhatsAppCtr = {
             console.log("Sending message to candidate:", candidate.whatsappNumber);
             const user = {
               name: candidate.name,
-              url: `http://localhost:3000/reason-leaving-job/${candidate.id}`,
+              url: `${process.env.FRONTEND_URL}/reason-leaving-job/${candidate.id}`,
               phone: candidate.whatsappNumber,
             };
             await sendMessage(user);
@@ -66,7 +66,7 @@ const WhatsAppCtr = {
             console.log("Sending message to candidate:", candidate.whatsappNumber);
             const user = {
               name: candidate.name,
-              url: `http://localhost:3000/reason-leaving-job/${candidate.id}`,
+              url: `${process.env.FRONTEND_URL}/reason-leaving-job/${candidate.id}`,
               phone: candidate.whatsappNumber,
             };
             await sendMessage(user);

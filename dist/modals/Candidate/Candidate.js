@@ -3,10 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// src/models/Candidate.ts
 const sequelize_1 = require("sequelize");
 const dbconfig_1 = __importDefault(require("../../dbconfig/dbconfig"));
 const User_1 = __importDefault(require("../User/User"));
+const Designation_1 = __importDefault(require("../Designation/Designation"));
 class Candidate extends sequelize_1.Model {
 }
 Candidate.init({
@@ -40,19 +40,31 @@ Candidate.init({
     },
     workExp: {
         type: sequelize_1.DataTypes.STRING,
-        allowNull: true
+        allowNull: true,
     },
     currentCTC: {
         type: sequelize_1.DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
     },
     currentLocation: {
         type: sequelize_1.DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
     },
     state: {
         type: sequelize_1.DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
+    },
+    currentEmployeer: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: true,
+    },
+    postalAddress: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: true,
+    },
+    lastActive: {
+        type: sequelize_1.DataTypes.DATE,
+        allowNull: true,
     },
     preferredLocation: {
         type: sequelize_1.DataTypes.STRING,
@@ -62,9 +74,9 @@ Candidate.init({
         type: sequelize_1.DataTypes.DATE,
         allowNull: true,
     },
-    designationId: {
-        type: sequelize_1.DataTypes.INTEGER,
-        allowNull: false,
+    remarks: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: true,
     },
     UserId: {
         type: sequelize_1.DataTypes.BIGINT,
@@ -76,8 +88,59 @@ Candidate.init({
         },
         allowNull: false,
     },
+    designationId: {
+        type: sequelize_1.DataTypes.INTEGER,
+        references: {
+            model: Designation_1.default,
+            key: 'id',
+        },
+        allowNull: false,
+    },
+    country: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: true,
+    },
+    city: {
+        type: sequelize_1.DataTypes.STRING,
+        allowNull: true,
+    },
+    lastReminderSent: {
+        type: sequelize_1.DataTypes.DATE,
+        defaultValue: new Date(),
+    },
 }, {
-    tableName: 'candidates',
+    tableName: "candidates",
     sequelize: dbconfig_1.default,
 });
+// Candidate - User (Many-to-One)
+Candidate.belongsTo(User_1.default, {
+    foreignKey: "UserId",
+    as: "user",
+    onDelete: "CASCADE",
+});
+User_1.default.hasMany(Candidate, {
+    foreignKey: "UserId",
+    as: "candidates",
+    onDelete: "CASCADE",
+});
+// // Candidate - Designation (Many-to-One)
+Candidate.belongsTo(Designation_1.default, {
+    foreignKey: "designationId",
+    as: "designation",
+    onDelete: "CASCADE",
+});
+Designation_1.default.hasMany(Candidate, {
+    foreignKey: "designationId",
+    as: "candidates",
+    onDelete: "CASCADE",
+});
+// // // // Candidate - Region (Many-to-One)
+// Candidate.belongsTo(Region, {
+//   foreignKey: "regionId",
+//   as: "region"
+// });
+// Region.hasMany(Candidate, {
+//   foreignKey: "regionId",
+//   as: "candidates"
+// });
 exports.default = Candidate;

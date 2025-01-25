@@ -13,12 +13,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const User_1 = __importDefault(require("../../modals/User/User"));
 const Designation_1 = __importDefault(require("../../modals/Designation/Designation"));
 const http_status_codes_1 = require("http-status-codes");
 const DesignationCtr = {
     // create designation ctr
     createdesignationctr: (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
+            const userExists = yield User_1.default.findOne({ where: { id: req.user.id },
+                attributes: ["id", "Type"],
+            });
+            if (userExists.Type !== "superadmin") {
+                res.status(http_status_codes_1.StatusCodes.BAD_REQUEST);
+                throw new Error("You are not authorized to create designation");
+            }
             const { title } = req.body;
             // check User existance
             // const userExists: number | unknown = await User.findByPk(req.user);
@@ -41,7 +49,7 @@ const DesignationCtr = {
             }
             return res
                 .status(http_status_codes_1.StatusCodes.OK)
-                .json({ success: true, message: "designation created Successfully" });
+                .json({ success: true, message: "designation created Successfully", result: itemresp });
         }
         catch (error) {
             throw new Error(error);
@@ -78,13 +86,25 @@ const DesignationCtr = {
             //   res.status(404);
             //   throw new Error("User Not Found Please Login !");
             // }
+            const userExists = yield User_1.default.findOne({ where: { id: req.user.id },
+                attributes: ["id", "Type"],
+            });
+            if (userExists.Type !== "superadmin") {
+                res.status(http_status_codes_1.StatusCodes.BAD_REQUEST);
+                throw new Error("You are not authorized to create designation");
+            }
             const removeitem = yield Designation_1.default.findByPk(req.params.id);
             if (!removeitem) {
                 res.status(http_status_codes_1.StatusCodes.NOT_FOUND);
                 throw new Error("Item not Found");
             }
             else {
-                removeitem.destroy();
+                try {
+                    yield removeitem.destroy();
+                }
+                catch (error) {
+                    throw new Error(error);
+                }
             }
             return res.status(http_status_codes_1.StatusCodes.OK).json({
                 message: "designation items remove successfully",
@@ -103,16 +123,29 @@ const DesignationCtr = {
             //   res.status(404);
             //   throw new Error("User Not Found Please Login !");
             // }
+            const userExists = yield User_1.default.findOne({ where: { id: req.user.id },
+                attributes: ["id", "Type"],
+            });
+            if (userExists.Type !== "superadmin") {
+                res.status(http_status_codes_1.StatusCodes.BAD_REQUEST);
+                throw new Error("You are not authorized to create designation");
+            }
             const checkDesigation = yield Designation_1.default.findByPk(req.params.id);
             if (!checkDesigation) {
                 res.status(http_status_codes_1.StatusCodes.BAD_REQUEST);
                 throw new Error("Bad Request");
             }
             //check if designation exist
-            yield checkDesigation.update({ title: req.body.title });
+            const { title } = req.body;
+            const checkdesignation = yield Designation_1.default.findOne({ where: { title } });
+            if (checkdesignation) {
+                res.status(http_status_codes_1.StatusCodes.BAD_REQUEST);
+                throw new Error("Designation Already Exist");
+            }
+            yield checkDesigation.update({ title });
             return res
                 .status(http_status_codes_1.StatusCodes.OK)
-                .json({ message: "Update designation succesfully", success: true });
+                .json({ message: "Update designation succesfully", success: true, result: checkDesigation });
         }
         catch (error) {
             throw new Error(error);

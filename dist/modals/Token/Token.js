@@ -23,6 +23,7 @@ Token.init({
             key: "id",
         },
         allowNull: false,
+        onDelete: "CASCADE",
     },
     token: {
         type: sequelize_1.DataTypes.STRING,
