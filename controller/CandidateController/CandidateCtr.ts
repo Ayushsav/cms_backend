@@ -1060,7 +1060,54 @@ importCandidates: asyncHandler(
                 );
                 continue;
               }
-
+              if (data["Last Active"]) {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(data["Last Active"])) {
+                  errors.push(
+                    `Invalid Last Active for candidate: ${data["Candidate Name"]}. Please provide in YYYY-MM-DD format`
+                  );
+                  continue;
+                }
+              }
+              if (data["Comment 1"]){
+                if (data["Comment 1"].length > 255){
+                  errors.push(
+                    `Comment 1 for candidate: ${data["Candidate Name"]} should be less than 255 characters`
+                  );
+                  continue;
+                }
+              }
+              if (data["Comment 2"]){
+                if (data["Comment 2"].length > 255){
+                  errors.push(
+                    `Comment 2 for candidate: ${data["Candidate Name"]} should be less than 255 characters`
+                  );
+                  continue;
+                }
+              }
+              if (data["Comment 3"]){
+                if (data["Comment 3"].length > 255){
+                  errors.push(
+                    `Comment 3 for candidate: ${data["Candidate Name"]} should be less than 255 characters`
+                  );
+                  continue;
+                }
+              }
+              if (data["Comment 4"]){
+                if (data["Comment 4"].length > 255){
+                  errors.push(
+                    `Comment 4 for candidate: ${data["Candidate Name"]} should be less than 255 characters`
+                  );
+                  continue;
+                }
+              }
+              if (data["Comment 5"]){
+                if (data["Comment 5"].length > 255){
+                  errors.push(
+                    `Comment 5 for candidate: ${data["Candidate Name"]} should be less than 255 characters`
+                  );
+                  continue;
+                }
+              }
               // Check if Candidate already exists (by email or contact number)
               const existingCandidate = await Candidate.findOne({
                 where: {
@@ -1095,7 +1142,7 @@ importCandidates: asyncHandler(
                   preferredLocation: data["Preferred Location"] || "",
                   dob: new Date(data["Date of Birth"]),
                   designationId: designation.id,
-                  lastActive: new Date(),
+                  lastActive: data["Last Active"] ? new Date(data["Last Active"]) : new Date(),
                   remarks: data["Remarks"] || "",
                   country: data.Country || "",
                   city: data.City || "",
@@ -1121,7 +1168,7 @@ importCandidates: asyncHandler(
                   preferredLocation: data["Preferred Location"] || "",
                   dob: new Date(data["Date of Birth"]),
                   designationId: designation.id,
-                  lastActive: new Date(),
+                  lastActive: data["Last Active"] ? new Date(data["Last Active"]) : new Date(),
                   remarks: data["Remarks"] || "",
                   country: data.Country || "",
                   city: data.City || "",
@@ -1206,6 +1253,122 @@ importCandidates: asyncHandler(
                 console.warn('Invalid Tags format: Expected a comma-separated string.');
               }
 
+              const comments = ["Comment 1", "Comment 2", "Comment 3", "Comment 4", "Comment 5"];
+
+// for (const comment of comments) {
+//   if (data[comment]) {
+//     const reasonsDa = await ReasonAnswer.findOne({
+//       where: { Reason_answer: data[comment] }
+//     });
+//     if (!reasonsDa) {
+//       // errors.push(
+//       //   `Invalid ${comment} for candidate: ${data["Candidate Name"]}. Please provide a valid ${comment}`
+//       // );
+//       // continue;
+//       const reasonQue = await ReasonsForLeaving.findAll();
+      
+//       const reasonfirst = reasonQue[0];
+//       const reasons1 = await ReasonAnswer.create({
+//         reason_id: reasonfirst.id,
+//         Reason_answer: data[comment]
+//       });
+//       const checkreason1 = await ReasonSaveAnswer.findOne({
+//         where: { candidateId: educationData.candidateId, questionId: reasonfirst.id , answer: reasons1.id}
+//       });
+//       if (!checkreason1) {
+//         await ReasonSaveAnswer.create({
+//           candidateId: educationData.candidateId,
+//           questionId: reasonfirst.id,
+//           answer: reasons1.id
+//         });
+//       } else {
+//         await checkreason1.update({
+//           answer: reasons1.id
+//         });
+        
+//       }
+
+  
+//     }
+//     else{
+//     const checkReason = await ReasonSaveAnswer.findOne({
+//       where: { candidateId: educationData.candidateId, questionId: reasonsDa.reason_id , answer: reasonsDa.id}
+//     });
+//     if (!checkReason) {
+//       await ReasonSaveAnswer.create({
+//         candidateId: educationData.candidateId,
+//         questionId: reasonsDa.reason_id,
+//         answer: reasonsDa.id
+//       });
+//     } else {
+//       await checkReason.update({
+//         answer: reasonsDa.id
+//       });
+      
+//     }
+//   }
+//   }
+// }
+const existingComments = await ReasonSaveAnswer.findAll({
+  where: { candidateId: educationData.candidateId }
+});
+
+const updatedComments = comments.filter(comment => data[comment]).map(comment => data[comment]);
+
+for (const comment of comments) {
+  if (data[comment]) {
+    const reasonsDa = await ReasonAnswer.findOne({
+      where: { Reason_answer: data[comment] }
+    });
+    if (!reasonsDa) {
+      const reasonQue = await ReasonsForLeaving.findAll();
+      const reasonfirst = reasonQue[0];
+      const reasons1 = await ReasonAnswer.create({
+        reason_id: reasonfirst.id,
+        Reason_answer: data[comment]
+      });
+      const checkreason1 = await ReasonSaveAnswer.findOne({
+        where: { candidateId: educationData.candidateId, questionId: reasonfirst.id, answer: reasons1.id }
+      });
+      if (!checkreason1) {
+        await ReasonSaveAnswer.create({
+          candidateId: educationData.candidateId,
+          questionId: reasonfirst.id,
+          answer: reasons1.id
+        });
+      } else {
+        await checkreason1.update({
+          answer: reasons1.id
+        });
+      }
+    } else {
+      const checkReason = await ReasonSaveAnswer.findOne({
+        where: { candidateId: educationData.candidateId, questionId: reasonsDa.reason_id, answer: reasonsDa.id }
+      });
+      if (!checkReason) {
+        await ReasonSaveAnswer.create({
+          candidateId: educationData.candidateId,
+          questionId: reasonsDa.reason_id,
+          answer: reasonsDa.id
+        });
+      } else {
+        await checkReason.update({
+          answer: reasonsDa.id
+        });
+      }
+    }
+  }
+}
+
+// Delete comments that are not in the updated list
+for (const existingComment of existingComments) {
+  const reasonAnswer = await ReasonAnswer.findOne({
+    where: { id: existingComment.answer }
+  });
+  if (reasonAnswer && !updatedComments.includes(reasonAnswer.Reason_answer)) {
+    await existingComment.destroy();
+  }
+}
              
 
 
@@ -1270,6 +1433,13 @@ importCandidates: asyncHandler(
           "PG",
           "Post PG",
           "Tags",
+          "Last Active",
+          "Comment 1",
+          "Comment 2",
+          "Comment 3",
+          "Comment 4",
+          "Comment 5",
+          "Remarks",
         ];
   
         // Generate a CSV file dynamically
@@ -1307,6 +1477,13 @@ importCandidates: asyncHandler(
           "PG": "",
           "Post PG": "",
           "Tags": "Developer,Ui,Web Development",
+          "Last Active": "2021-10-03",
+          "Comment 1": "Good Candidate",
+          "Comment 2": "Good Communication",
+          "Comment 3": "Good Skills",
+          "Comment 4": "Good Experience",
+          "Comment 5": "Good Knowledge",
+          "Remarks": "Good Candidate",
         };
         csvStream.write(sampleRow);
   
